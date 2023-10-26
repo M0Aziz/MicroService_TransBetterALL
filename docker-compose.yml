@@ -1,0 +1,143 @@
+version: "3.8"
+
+services:
+
+  db:
+    image: mysql:latest
+    restart: always
+    container_name: mysql-container
+    environment:
+      MYSQL_ROOT_PASSWORD: 'root'
+      MYSQL_DATABASE: 'Transbetter'
+    ports:
+      - 3306:3306
+    networks:
+      - mynetwork
+    volumes:
+      - mysql:/var/lib/mysql
+
+  mongodb:
+    image: mongo:latest
+    ports:
+      - "27018:27017"
+    networks:
+      - mynetwork  
+    volumes:
+      - mongodb-data:/data/db
+
+  phpmyadmin:
+    image: phpmyadmin
+    restart: always
+    container_name: phpmyadmin-container
+    ports:
+      - 8081:80
+    environment:
+      PMA_HOST: mysql-container
+    networks:
+      - mynetwork
+      
+  eureka-server-ms-image:
+    build: ./eureka-server-ms
+    container_name: eureka-server
+    ports:
+      - 8761:8761
+    networks:
+      - mynetwork
+
+  transport-ms-image:
+    build: ./transport-ms
+    container_name: transport-ms
+    environment:
+      MYSQL_HOST: 'db'
+      MYSQL_USER: 'root'
+      MYSQL_PASSWORD: 'root'
+      MYSQL_DATABASE: 'Transbetter'
+    ports:
+      - 8089:8089
+    links:
+      - db
+    networks:
+      - mynetwork
+
+  moyen-ms-image:
+    build: ./moyen_micro-main
+    container_name: moyen-ms
+    environment:
+      MYSQL_HOST: 'db'
+      MYSQL_USER: 'root'
+      MYSQL_PASSWORD: 'root'
+      MYSQL_DATABASE: 'Transbetter'
+    ports:
+      - 8088:8088
+    links:
+      - db
+    networks:
+      - mynetwork
+
+  categorie-ms-image:
+    build: ./MicroService-main
+    container_name: categorie-ms
+    environment:
+      MYSQL_HOST: 'db'
+      MYSQL_USER: 'root'
+      MYSQL_PASSWORD: 'root'
+      MYSQL_DATABASE: 'Transbetter'
+    ports:
+      - 8087:8087
+    links:
+      - db
+    networks:
+      - mynetwork
+
+  user-ms-image:
+    build: ./MicroService-abmalek
+    container_name: user-ms
+    environment:
+      MYSQL_HOST: 'mem'
+      MYSQL_USER: 'sa'
+      MYSQL_PASSWORD: 'password'
+      MYSQL_DATABASE: 'TransBetter'
+    ports:
+      - 8090:8090
+    links:
+      - db
+    networks:
+      - mynetwork
+
+  gateway:
+    build: ./Api_Gateway_Server
+    container_name: gateway
+    ports:
+      - 8082:8082
+    networks:
+      - mynetwork
+    depends_on:
+      - eureka-server-ms-image
+  
+  black-ops-js-ms:
+    build: ./Trans_Better-Node-main
+    ports:
+      - "5000:5000"
+    links:
+      - mongodb
+    depends_on:
+      - mongodb
+    networks:
+      - mynetwork
+
+
+  
+  keycloak:
+    image: jboss/keycloak
+    environment:
+      - KEYCLOAK_USER=admin
+      - KEYCLOAK_PASSWORD=admin
+    ports:
+      - "8086:8080"
+
+networks:
+  mynetwork:
+
+volumes:
+  mysql:
+  mongodb-data:
