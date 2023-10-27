@@ -12,6 +12,8 @@ import java.util.Optional;
 
 @Controller
 @RequestMapping("/Abonements")
+@CrossOrigin(origins = "*")
+
 public class AbonementController {
 
     @Autowired
